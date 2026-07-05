@@ -339,12 +339,17 @@ def api_algorithm_detect():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ---------------------------------------------------------------------------
+# Module-level app instance — required by gunicorn (gunicorn app:app)
+# ---------------------------------------------------------------------------
+app = create_app()
+
 if __name__ == "__main__":
-    application = create_app()
     socketio.run(
-        application,
+        app,
         host="127.0.0.1",
         port=5000,
-        debug=application.config["DEBUG"],
+        debug=app.config["DEBUG"],
         allow_unsafe_werkzeug=True,  # local dev server; use gunicorn in prod
     )
+
