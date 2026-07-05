@@ -1,0 +1,194 @@
+/* =========================================================
+   AI-EVER — VSCode-like editor styles
+   FIX: the gutter now lives INSIDE the scroll container as a
+   sticky column. Gutter, code, and execution highlight are in
+   the same flow — they physically cannot drift out of line.
+
+   CRITICAL: The editor uses a two-layer approach:
+     - A <pre><code> layer for syntax-highlighted display
+     - A transparent <textarea> on top for input/caret
+   Both MUST have pixel-identical font metrics or the cursor
+   drifts from the visible text.
+   ========================================================= */
+
+.editor-panel { min-height: 0; }
+
+/* Master font definition — everything inherits from here */
+.editor-wrap {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    background: var(--editor-bg);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+    line-height: 22px;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    font-variant-ligatures: none;
+    font-feature-settings: "calt" 0, "liga" 0, "clig" 0, "dlig" 0, "hlig" 0;
+    -webkit-font-feature-settings: "calt" 0, "liga" 0;
+}
+
+/* ---------- Single scroll container ---------- */
+.editor-scroller {
+    position: relative;
+    flex: 1;
+    overflow: auto;
+    scroll-behavior: smooth;
+}
+
+/* Row: gutter + code, both scroll together */
+.editor-inner {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    min-height: 100%;
+    align-items: stretch;
+}
+
+/* ---------- Gutter (line numbers) — sticky for horizontal scroll ---------- */
+.gutter {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: var(--gutter-bg);
+    color: var(--gutter-fg);
+    text-align: right;
+    padding: 10px 10px 40px 0;   /* identical vertical metrics to the code */
+    min-width: 52px;
+    user-select: none;
+    border-right: 1px solid var(--border);
+    white-space: pre;
+    flex-shrink: 0;
+}
+
+.gutter .ln        { display: block; padding-right: 4px; height: 22px; }
+.gutter .ln.active { color: var(--accent); font-weight: 700; }
+.gutter .ln.exec   { color: var(--green);  font-weight: 700; }
+.gutter .ln:hover  { color: var(--text); cursor: pointer; }
+
+/* ---------- Code area ---------- */
+.editor-content {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Both layers share IDENTICAL metrics so they align 1:1 */
+.highlight-layer,
+.code-input {
+    margin: 0;
+    border: 0;
+    padding: 10px 14px 40px 14px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    white-space: pre;
+    word-wrap: normal;
+    box-sizing: border-box;
+    letter-spacing: 0px;
+    word-spacing: 0px;
+    text-rendering: auto;
+    font-variant-ligatures: none;
+    font-feature-settings: "calt" 0, "liga" 0, "clig" 0, "dlig" 0, "hlig" 0;
+    -webkit-font-feature-settings: "calt" 0, "liga" 0;
+    -webkit-text-size-adjust: none;
+}
+
+/* The <code> inside the <pre> MUST inherit everything — browsers
+   give <code> a different default font-family which breaks alignment */
+#highlight-code {
+    font: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    tab-size: inherit;
+    -moz-tab-size: inherit;
+    white-space: inherit;
+    font-variant-ligatures: inherit;
+    font-feature-settings: inherit;
+}
+
+/* In normal flow — defines the scrollable size */
+.highlight-layer {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+    color: var(--text);
+    min-height: 100%;
+}
+
+/* Stretched over the pre — captures input, paints only the caret */
+.code-input {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--accent);
+    resize: none;
+    outline: none;
+    overflow: hidden;
+    white-space: pre;
+}
+
+.code-input::selection { background: var(--accent-glow); }
+.code-input:read-only  { caret-color: transparent; }
+
+/* ---------- Execution line highlight (animated) ---------- */
+.exec-highlight {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 22px;
+    z-index: 0;
+    background: var(--current-line);
+    box-shadow: inset 3px 0 0 var(--accent);
+    pointer-events: none;
+    transition: top 0.18s ease-out;
+}
+
+.exec-highlight.flash { animation: execGlow 0.45s ease; }
+
+@keyframes execGlow {
+    0%   { background: var(--accent-glow); box-shadow: inset 3px 0 0 var(--accent), 0 0 14px var(--accent-glow); }
+    100% { background: var(--current-line); box-shadow: inset 3px 0 0 var(--accent); }
+}
+
+.exec-highlight.error-line {
+    background: rgba(248, 81, 73, 0.15);
+    box-shadow: inset 3px 0 0 var(--red);
+}
+
+/* ---------- Syntax token colors ---------- */
+/* IMPORTANT: NO font-weight changes on tokens!
+   Bold text has different glyph widths even in "monospace" fonts,
+   which breaks the textarea ↔ pre character alignment. */
+.tok-kw    { color: var(--purple); }
+.tok-def   { color: var(--accent);  }
+.tok-str   { color: var(--cyan);    }
+.tok-num   { color: var(--orange);  }
+.tok-com   { color: var(--text-muted); font-style: italic; }
+.tok-fn    { color: var(--yellow);  }
+.tok-op    { color: var(--red);     }
+.tok-builtin { color: var(--green); }
+.tok-self  { color: var(--orange); font-style: italic; }
+
+/* ---------- Status bar ---------- */
+.editor-statusbar {
+    display: flex;
+    gap: 18px;
+    padding: 4px 14px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+#exec-status { color: var(--green); font-weight: 600; }

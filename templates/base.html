@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI-EVER Code Visualizer{% endblock %}</title>
+
+    <!-- Fully offline: all assets served locally -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/editor.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/copilot.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- ============ Navigation ============ -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="brand">
+                <span class="brand-logo">⬡</span>
+                <span class="brand-name">AI-EVER</span>
+                <span class="brand-sub">Code Visualizer</span>
+            </div>
+        </div>
+
+        <div class="nav-center">
+            <a href="{{ url_for('main.index') }}" class="nav-link" data-nav="visualizer">Visualizer</a>
+            <a href="{{ url_for('main.flowchart') }}" class="nav-link" data-nav="flowchart">Flowchart</a>
+            <a href="{{ url_for('main.ast_page') }}" class="nav-link" data-nav="ast">AST</a>
+            <a href="{{ url_for('main.sessions') }}" class="nav-link" data-nav="sessions">Sessions</a>
+            <a href="{{ url_for('main.about') }}" class="nav-link" data-nav="about">About</a>
+        </div>
+
+        <div class="nav-right">
+            <button id="toggle-tutor-btn" class="nav-link" style="background: none; border: 1px solid var(--border); color: var(--accent); cursor: pointer;" title="Toggle AI Tutor">🤖 AI Tutor</button>
+            <span id="server-status" class="status-dot" title="Server status"></span>
+            <select id="theme-selector" class="theme-selector" title="Theme">
+                <option value="dark" selected>🌙 Dark</option>
+                <option value="light">☀ Light</option>
+            </select>
+        </div>
+    </nav>
+
+    <!-- ============ Page content ============ -->
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <span>AI-EVER Code Visualizer · v1.0 · Phase 1 · 100% Offline</span>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,13 @@
+# AI-EVER Code Visualizer - Python dependencies
+# Fully offline: no runtime CDN/network calls required.
+# SocketIO runs in threading mode (no eventlet/gevent needed for dev).
+
+Flask==3.0.3
+Flask-SocketIO==5.3.6
+python-socketio==5.11.2
+python-engineio==4.9.1
+
+# Code analysis / visualization (Phase 2+)
+graphviz==0.20.3
+networkx==3.3
+Pygments==2.18.0

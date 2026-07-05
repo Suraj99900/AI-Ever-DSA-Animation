@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}AI-EVER · Visualizer{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/visualizer.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="workspace" id="workspace">
+
+    <!-- ============ Left Pane (Editor + Console) ============ -->
+    <div class="left-pane" id="left-pane">
+        <section class="panel editor-panel">
+            <div class="panel-header">
+            <span class="panel-title">📝 editor</span>
+
+            <div class="toolbar">
+                <select id="lang-select" class="theme-selector" title="Language">
+                    <option value="python" selected>🐍 Python</option>
+                    <option value="javascript">🟨 JavaScript</option>
+                </select>
+                <button id="btn-analyze"  class="btn btn-analyze" title="Analyze Code">🔍 Analyze</button>
+                <button id="btn-run"      class="btn btn-run" title="Run (Ctrl+Enter)">▶ Run</button>
+                <button id="btn-pause"    class="btn" title="Pause"         disabled>⏸</button>
+                <button id="btn-resume"   class="btn" title="Resume"        disabled>⏵</button>
+                <button id="btn-prev"     class="btn" title="Previous step" disabled>⏮</button>
+                <button id="btn-next"     class="btn" title="Next step"     disabled>⏭</button>
+                <button id="btn-restart"  class="btn" title="Restart"       disabled>↻</button>
+
+                <div class="speed-control" title="Playback speed">
+                    <input id="speed-slider" type="range" min="0" max="5" step="1" value="2">
+                    <span id="speed-label">1x</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-wrap" id="editor-wrap">
+            <div class="editor-scroller" id="editor-scroller">
+                <div class="editor-inner">
+                    <div class="gutter" id="gutter" aria-hidden="true"></div>
+                    <div class="editor-content" id="editor-content">
+                        <div class="exec-highlight" id="exec-highlight" hidden></div>
+                        <pre class="highlight-layer" id="highlight-layer" aria-hidden="true"><code id="highlight-code"></code></pre>
+                        <textarea id="code-input" class="code-input" spellcheck="false" wrap="off"
+                                  autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-statusbar">
+            <span id="cursor-pos">Ln 1, Col 1</span>
+            <span id="char-count">0 chars</span>
+            <span id="exec-status"></span>
+            <span id="step-counter" class="step-counter"></span>
+        </div>
+        </section>
+
+        <!-- ============ Horizontal Splitter ============ -->
+        <div class="h-splitter" id="h-splitter" title="Drag to resize vertically">
+            <div class="splitter-handle"></div>
+        </div>
+
+        <section class="panel console-panel" id="console-section">
+            <div class="panel-header">
+                <span class="panel-title">🖥 Console</span>
+                <div class="console-tools">
+                    <button id="btn-clear-console" class="btn btn-sm">Clear</button>
+                </div>
+            </div>
+            <div class="panel-body console" id="console-output"></div>
+        </section>
+    </div>
+
+    <!-- ============ Vertical Splitter ============ -->
+    <div class="v-splitter" id="v-splitter" title="Drag to resize horizontally">
+        <div class="splitter-handle"></div>
+    </div>
+
+    <!-- ============ Right Pane (Analysis Panels) ============ -->
+    <div class="right-pane" id="right-pane">
+        <section class="panel" id="viz-section">
+            <div class="panel-header" style="justify-content: space-between;">
+                <span class="panel-title">📊 Visualize</span>
+                <div id="algo-stats" style="display:none; font-size: 12px; color: #a5d6ff; display: flex; gap: 15px;">
+                    <span id="stat-algo">Algo: Unknown</span>
+                    <span id="stat-swaps">Swaps: 0</span>
+                    <span id="stat-comps">Comparisons: 0</span>
+                </div>
+            </div>
+            <div class="panel-body" id="viz-panel">
+                <div class="placeholder">Arrays, pointers &amp; dicts animate here during execution</div>
+            </div>
+        </section>
+        
+        <div class="h-splitter dashboard-splitter" id="dsplit-1" title="Drag to resize vertically">
+            <div class="splitter-handle"></div>
+        </div>
+
+        <section class="panel" id="explain-section">
+            <div class="panel-header">
+                <span class="panel-title">📖 Explain</span>
+            </div>
+            <div class="panel-body" id="explain-panel">
+                <div class="placeholder">Run code to see line-by-line explanations and complexity analysis</div>
+            </div>
+        </section>
+        
+        <div class="h-splitter dashboard-splitter" id="dsplit-2" title="Drag to resize vertically">
+            <div class="splitter-handle"></div>
+        </div>
+
+        <section class="panel" id="memory-section">
+            <div class="panel-header">
+                <span class="panel-title">🧠 Memory</span>
+            </div>
+            <div class="panel-body" id="memory-panel">
+                <div class="placeholder">Run code to watch variables live</div>
+            </div>
+        </section>
+        
+        <div class="h-splitter dashboard-splitter" id="dsplit-3" title="Drag to resize vertically">
+            <div class="splitter-handle"></div>
+        </div>
+
+        <section class="panel" id="stack-section">
+            <div class="panel-header">
+                <span class="panel-title">📚 Stack</span>
+            </div>
+            <div class="panel-body" id="stack-panel">
+                <div class="placeholder">Call stack appears during execution</div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- ============ Vertical Splitter (Tutor) ============ -->
+    <div class="v-splitter" id="tutor-splitter" title="Drag to resize horizontally" style="display: none;">
+        <div class="splitter-handle"></div>
+    </div>
+
+    <!-- ============ AI Tutor Panel ============ -->
+    <div class="ai-tutor-panel" id="ai-tutor-panel">
+        <div class="tutor-header">
+            <span>🤖 AI Tutor</span>
+            <button id="close-tutor-btn" style="background:none;border:none;color:var(--text);cursor:pointer;">✖</button>
+        </div>
+        <div class="tutor-messages" id="tutor-messages">
+            <div class="tutor-msg ai">Hello! I'm your AI programming mentor. Run your code or ask me a question!</div>
+        </div>
+        <div class="tutor-input-area">
+            <textarea id="tutor-input" class="tutor-input" placeholder="Ask about the code..."></textarea>
+            <button id="tutor-send-btn" class="tutor-btn">Send</button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- GSAP & Cytoscape for Phase 4 Visualization Engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/visualization/EventBus.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization/GSAPAnimations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization/VisualizationManager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization/AnimationController.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization/ArrayRenderer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization/GraphRenderer.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dataviz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualizer.js') }}"></script>
+{% endblock %}

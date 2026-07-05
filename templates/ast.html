@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}AI-EVER · AST Viewer{% endblock %}
+
+{% block styles %}
+<style>
+.ast-page { padding: 20px; max-width: 900px; margin: 0 auto; width: 100%; overflow-y: auto; }
+.ast-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+.ast-hint { color: var(--text-muted); font-size: 12.5px; }
+.ast-tree { font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }
+.ast-tree details { margin-left: 18px; border-left: 1px dashed var(--border); padding-left: 10px; }
+.ast-tree summary {
+    cursor: pointer; padding: 2px 6px; border-radius: 5px; list-style: none;
+    display: inline-block; animation: astIn 0.2s ease;
+}
+@keyframes astIn { from { opacity: 0; } to { opacity: 1; } }
+.ast-tree summary:hover { background: var(--bg-elevated); }
+.ast-tree summary::before { content: "▸ "; color: var(--text-muted); font-size: 11px; }
+.ast-tree details[open] > summary::before { content: "▾ "; }
+.ast-leaf { padding: 2px 6px; margin-left: 18px; }
+.ast-type  { color: var(--purple); font-weight: 700; }
+.ast-field { color: var(--text-muted); font-size: 11px; }
+.ast-label { color: var(--cyan); }
+.ast-line  { color: var(--text-muted); font-size: 10.5px; }
+.ast-error { color: var(--red); font-family: monospace; padding: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ast-page">
+    <div class="ast-toolbar">
+        <button id="ast-generate" class="btn btn-run">⚙ Generate from editor code</button>
+        <button id="ast-expand" class="btn">Expand all</button>
+        <button id="ast-collapse" class="btn">Collapse all</button>
+        <span class="ast-hint">Uses the code currently in the Visualizer editor</span>
+    </div>
+    <div id="ast-output" class="ast-tree"><div class="ast-hint">Press Generate to parse the AST.</div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+"use strict";
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function renderNode(n) {
+    const head =
+        `<span class="ast-type">${esc(n.type)}</span>` +
+        (n.field ? ` <span class="ast-field">(${esc(n.field)})</span>` : "") +
+        (n.label ? ` <span class="ast-label">${esc(n.label)}</span>` : "") +
+        (n.line ? ` <span class="ast-line">ln ${n.line}</span>` : "");
+    if (!n.children || !n.children.length)
+        return `<div class="ast-leaf">${head}</div>`;
+    return `<details open><summary>${head}</summary>${n.children.map(renderNode).join("")}</details>`;
+}
+
+document.getElementById("ast-generate").addEventListener("click", async () => {
+    const code = localStorage.getItem("aiever-last-code") || "";
+    const out = document.getElementById("ast-output");
+    if (!code.trim()) {
+        out.innerHTML = '<div class="ast-error">No code found — write code in the Visualizer editor first.</div>';
+        return;
+    }
+    const res = await fetch("/api/ast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    out.innerHTML = data.ok
+        ? renderNode(data.tree)
+        : `<div class="ast-error">✖ ${esc(data.error.type)}: ${esc(data.error.message)} (line ${data.error.line})</div>`;
+});
+
+document.getElementById("ast-expand").addEventListener("click", () =>
+    document.querySelectorAll("#ast-output details").forEach((d) => (d.open = true)));
+document.getElementById("ast-collapse").addEventListener("click", () =>
+    document.querySelectorAll("#ast-output details").forEach((d) => (d.open = false)));
+</script>
+{% endblock %}

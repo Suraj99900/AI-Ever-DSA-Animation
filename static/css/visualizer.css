@@ -1,0 +1,453 @@
+/* =========================================================
+   AI-EVER — visualization panels, LeetCode-style tabs,
+   memory, call stack, data viz, responsive rules
+   ========================================================= */
+
+/* ================= Tabbed panel (LeetCode-style) ================= */
+.tabbed-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px 0 8px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab-btn {
+    position: relative;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+    background: var(--bg-panel);
+    color: var(--accent);
+    border-color: var(--border);
+    font-weight: 600;
+}
+
+.tab-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: varIn 0.2s ease;
+}
+
+.tab-pages { flex: 1; min-height: 0; display: flex; }
+
+.tab-page {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.tab-page.active { display: flex; }
+
+.tab-page .panel-body { flex: 1; overflow: auto; }
+
+.console-tools {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 10px 0 10px;
+}
+
+/* ================= Memory panel ================= */
+.var-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12.5px;
+    animation: varIn 0.25s ease;
+}
+
+.var-row + .var-row { margin-top: 2px; }
+
+.var-name { color: var(--accent); font-weight: 600; min-width: 70px; }
+.var-eq   { color: var(--text-muted); }
+.var-val  { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.var-row.changed {
+    background: var(--accent-glow);
+    animation: varChanged 0.7s ease;
+}
+
+@keyframes varIn      { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; } }
+@keyframes varChanged {
+    0%   { background: var(--accent-glow); transform: scale(1.03); }
+    100% { background: transparent; transform: scale(1); }
+}
+
+.scope-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+/* ================= Call stack panel ================= */
+.stack-frames { display: flex; flex-direction: column-reverse; gap: 4px; }
+
+.stack-frame {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12.5px;
+    display: flex;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.stack-frame .frame-line { color: var(--text-muted); font-size: 11px; }
+
+.stack-frame.top {
+    border-color: var(--accent);
+    background: var(--current-line);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.stack-frame.pushed { animation: framePush 0.3s ease; }
+
+@keyframes framePush {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+.stack-arrow { text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1; }
+
+.ret-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: var(--green);
+    color: #fff;
+    font-size: 11px;
+    animation: varIn 0.3s ease;
+}
+
+/* ================= Console ================= */
+.console .prog-out {
+    color: var(--text);
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+.step-counter { color: var(--accent); }
+
+/* =========================================================
+   Data visualization — arrays, sliding pointers, dicts, sets
+   ========================================================= */
+
+.viz-block { margin-bottom: 16px; }
+
+.viz-name {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+/* One scroll container: cells AND pointers move together */
+.viz-scroll { overflow-x: auto; padding-bottom: 4px; }
+
+.viz-track  { position: relative; width: max-content; min-width: 100%; }
+
+.viz-cells { display: flex; }
+
+.viz-cell {
+    position: relative;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    margin-right: 4px;               /* 40 + 4 = CELL_W in dataviz.js */
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 13px;
+    color: var(--text);
+    transition: background 0.25s, border-color 0.25s;
+}
+
+.viz-cell .viz-idx {
+    position: absolute;
+    bottom: -15px;
+    font-size: 9.5px;
+    color: var(--text-muted);
+}
+
+.viz-cell.str { background: transparent; border-style: dashed; }
+
+.viz-cell.changed { animation: cellPulse 0.6s ease; }
+
+@keyframes cellPulse {
+    0%   { background: var(--accent-glow); border-color: var(--accent); transform: scale(1.12); }
+    100% { background: var(--bg-elevated); border-color: var(--border); transform: scale(1); }
+}
+
+/* Sliding pointers — inside the same track, one lane per pointer */
+.viz-pointers {
+    position: relative;
+    margin-top: 18px;                /* room for index labels */
+}
+
+.viz-pointer {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 10.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.2s;
+}
+
+.viz-ptr-arrow { font-size: 11px; line-height: 1; }
+
+/* Dicts */
+.viz-dict { display: flex; flex-direction: column; gap: 3px; }
+
+.viz-kv {
+    display: flex;
+    gap: 8px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    animation: varIn 0.25s ease;
+}
+
+.viz-k { color: var(--purple); font-weight: 600; }
+.viz-v { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+
+/* Sets */
+.viz-set { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.viz-badge {
+    padding: 2px 9px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 11.5px;
+    animation: varIn 0.25s ease;
+}
+
+.viz-empty { color: var(--text-muted); font-size: 12px; }
+
+/* old splitter removed */
+
+/* =========================================================
+   Floating panels — draggable, resizable windows
+   ========================================================= */
+
+.floating-panel {
+    position: fixed;
+    width: 380px;
+    height: 440px;
+    min-width: 260px;
+    min-height: 200px;
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    resize: both;
+    animation: floatIn 0.2s ease;
+}
+
+@keyframes floatIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; } }
+
+.float-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.float-header:active { cursor: grabbing; }
+.float-title { font-size: 12.5px; font-weight: 700; }
+
+.float-body { flex: 1; min-height: 0; display: flex; }
+.float-body .tab-page { display: flex; flex: 1; min-height: 0; }
+
+.tab-btn.floated { opacity: 0.45; }
+.tab-btn.floated::after { content: " ⧉"; }
+
+.tab-float {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.tab-float:hover { color: var(--accent); background: var(--bg-panel); }
+
+/* =========================================================
+   Explain tab — complexity analysis
+   ========================================================= */
+
+.cx-summary { display: flex; gap: 8px; margin-bottom: 8px; }
+
+.cx-card {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    text-align: center;
+}
+
+.cx-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.cx-big   { font-size: 18px; font-weight: 700; color: var(--accent); font-family: "Cascadia Code", Consolas, monospace; margin-top: 3px; }
+.cx-note  { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.explain-current {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    padding: 10px 12px;
+    min-height: 84px;
+}
+
+.explain-code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 6px;
+    word-break: break-all;
+}
+
+.explain-text { font-size: 12.5px; line-height: 1.55; animation: varIn 0.25s ease; }
+
+.cx-chip {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: "Cascadia Code", Consolas, monospace;
+}
+
+.cg-edge {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    margin-bottom: 3px;
+}
+
+.cg-count { color: var(--text-muted); font-size: 10.5px; }
+
+/* =========================================================
+   Themed thin scrollbars (fixes chunky bar under tabs)
+   ========================================================= */
+
+.tab-bar { scrollbar-width: none; }
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.panel-body, .editor-scroller, .viz-scroll, .tab-pages, .side-panels {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.panel-body::-webkit-scrollbar,
+.editor-scroller::-webkit-scrollbar,
+.viz-scroll::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+.panel-body::-webkit-scrollbar-thumb,
+.editor-scroller::-webkit-scrollbar-thumb,
+.viz-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+}
+
+.panel-body::-webkit-scrollbar-track,
+.editor-scroller::-webkit-scrollbar-track,
+.viz-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* =========================================================
+   Responsive — tablet & mobile
+   ========================================================= */
+
+@media (max-width: 1024px) {
+    .workspace {
+        grid-template-columns: 1fr !important;  /* override saved splitter width */
+        height: auto;
+        min-height: calc(100vh - 82px);
+    }
+    .splitter { display: none; }
+    .editor-panel { min-height: 55vh; }
+    .side-panels  { min-height: 45vh; }
+    .tabbed-panel { min-height: 45vh; }
+    .floating-panel { max-width: 92vw; max-height: 70vh; }
+}
+
+@media (max-width: 640px) {
+    .workspace { padding: 6px; gap: 6px; }
+    .editor-panel { min-height: 48vh; }
+    .toolbar .btn { padding: 5px 8px; }
+    .speed-control input[type="range"] { width: 56px; }
+    .tab-btn { padding: 6px 9px; font-size: 11.5px; }
+    .editor-wrap { font-size: 13px; }
+    .editor-statusbar { gap: 10px; }
+}

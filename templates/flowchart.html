@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}AI-EVER · Flowchart{% endblock %}
+
+{% block styles %}
+<style>
+.fc-page { padding: 20px; max-width: 900px; margin: 0 auto; width: 100%; overflow-y: auto; }
+.fc-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+.fc-hint { color: var(--text-muted); font-size: 12.5px; }
+.fc-section { margin-bottom: 30px; }
+.fc-title {
+    font-family: "Cascadia Code", Consolas, monospace; font-size: 14px;
+    color: var(--accent); font-weight: 700; margin-bottom: 12px;
+}
+.fc-chart { display: flex; flex-direction: column; align-items: center; }
+.fc-node {
+    font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px;
+    text-align: center; animation: fcIn 0.3s ease;
+}
+@keyframes fcIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+.fc-cap {
+    padding: 6px 22px; border-radius: 20px; background: var(--green);
+    color: #fff; font-weight: 700;
+}
+.fc-process {
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-elevated); color: var(--text); max-width: 420px;
+}
+.fc-return {
+    padding: 7px 18px; border-radius: 20px; border: 1px solid var(--purple);
+    color: var(--purple); background: var(--bg-elevated); font-weight: 600;
+}
+.fc-cond {
+    padding: 10px 26px; background: var(--bg-elevated); color: var(--yellow);
+    border: 1.5px solid var(--yellow); font-weight: 600;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    padding: 16px 38px; min-width: 120px;
+}
+.fc-branches { display: flex; gap: 24px; align-items: flex-start; margin-top: 6px; }
+.fc-branch { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+.fc-lbl { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+.fc-lbl.yes { color: var(--green); }
+.fc-lbl.no  { color: var(--red); }
+.fc-loop {
+    border: 1.5px dashed var(--cyan); border-radius: 12px; padding: 10px 14px 14px;
+    display: flex; flex-direction: column; align-items: center;
+}
+.fc-loop-head { color: var(--cyan); font-weight: 700; font-size: 12.5px; margin-bottom: 8px; }
+.fc-arrow { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.fc-skip { color: var(--text-muted); font-size: 12px; padding: 6px; }
+.fc-line { color: var(--text-muted); font-size: 10px; }
+.fc-error { color: var(--red); font-family: monospace; padding: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fc-page">
+    <div class="fc-toolbar">
+        <button id="fc-generate" class="btn btn-run">⚙ Generate from editor code</button>
+        <span class="fc-hint">Uses the code currently in the Visualizer editor</span>
+    </div>
+    <div id="fc-output"><div class="fc-hint">Press Generate to build the flowchart automatically.</div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+"use strict";
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function renderNodes(nodes) {
+    if (!nodes.length) return '<div class="fc-skip">—</div>';
+    return nodes.map(renderNode).join('<div class="fc-arrow">↓</div>');
+}
+
+function renderNode(n) {
+    if (n.type === "process")
+        return `<div class="fc-node fc-process">${esc(n.text)}</div>`;
+    if (n.type === "return")
+        return `<div class="fc-node fc-return">${esc(n.text)}</div>`;
+    if (n.type === "loop")
+        return `<div class="fc-node fc-loop">
+            <div class="fc-loop-head">⟳ ${esc(n.head)}</div>
+            ${renderNodes(n.body)}
+        </div>`;
+    if (n.type === "if")
+        return `<div class="fc-node">
+            <div class="fc-chart"><div class="fc-cond">${esc(n.cond)}?</div></div>
+            <div class="fc-branches">
+                <div class="fc-branch"><div class="fc-lbl yes">Yes</div>${renderNodes(n.body)}</div>
+                <div class="fc-branch"><div class="fc-lbl no">No</div>${renderNodes(n.orelse)}</div>
+            </div>
+        </div>`;
+    return "";
+}
+
+function chart(title, nodes) {
+    return `<div class="fc-section">
+        <div class="fc-title">${esc(title)}</div>
+        <div class="fc-chart">
+            <div class="fc-node fc-cap">Start</div>
+            <div class="fc-arrow">↓</div>
+            ${renderNodes(nodes)}
+            <div class="fc-arrow">↓</div>
+            <div class="fc-node fc-cap">End</div>
+        </div>
+    </div>`;
+}
+
+document.getElementById("fc-generate").addEventListener("click", async () => {
+    const code = localStorage.getItem("aiever-last-code") || "";
+    const out = document.getElementById("fc-output");
+    if (!code.trim()) {
+        out.innerHTML = '<div class="fc-error">No code found — write code in the Visualizer editor first.</div>';
+        return;
+    }
+    const res = await fetch("/api/flowchart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+        out.innerHTML = `<div class="fc-error">✖ ${esc(data.error.type)}: ${esc(data.error.message)} (line ${data.error.line})</div>`;
+        return;
+    }
+    let html = "";
+    if (data.main.length) html += chart("main (module level)", data.main);
+    data.functions.forEach((f) => {
+        html += chart(`${f.name}(${f.args})`, f.body);
+    });
+    out.innerHTML = html || '<div class="fc-hint">Nothing to chart.</div>';
+});
+</script>
+{% endblock %}
